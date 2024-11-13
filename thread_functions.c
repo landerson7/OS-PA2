@@ -25,9 +25,6 @@ void *insert_thread(void *arg) {
     // Wait if there are other active insert threads
     pthread_mutex_lock(&cv_mutex);
     while (active_inserts > 0) {
-        // Log waiting on insert condition variable
-        timestamp = get_timestamp();
-        write_condition_event_to_output(timestamp, "WAITING ON INSERTS");
         pthread_cond_wait(&insert_cv, &cv_mutex);
     }
     active_inserts++;
@@ -35,7 +32,7 @@ void *insert_thread(void *arg) {
 
     // Log after being awakened
     timestamp = get_timestamp();
-    write_condition_event_to_output(timestamp, "INSERT AWAKENED");
+    write_command_to_output(timestamp, "INSERT", cmd->name, cmd->salary);
 
     // Acquire write lock
     rwlock_acquire_writelock(&rwlock);
@@ -60,8 +57,8 @@ void *insert_thread(void *arg) {
     pthread_cond_signal(&insert_cv);
     pthread_mutex_unlock(&cv_mutex);
 
-    // Log signaling insert
-    timestamp = get_timestamp();
+    // // Log signaling insert
+    // timestamp = get_timestamp();
     // write_condition_event_to_output(timestamp, "INSERT SIGNAL SENT");
 
     return NULL;
@@ -75,9 +72,6 @@ void *delete_thread(void *arg) {
     // Wait if there are other active delete threads
     pthread_mutex_lock(&cv_mutex);
     while (active_deletes > 0) {
-        // Log waiting on delete condition variable
-        timestamp = get_timestamp();
-        write_condition_event_to_output(timestamp, "WAITING ON DELETES");
         pthread_cond_wait(&delete_cv, &cv_mutex);
     }
     active_deletes++;
@@ -86,6 +80,7 @@ void *delete_thread(void *arg) {
     // Log after being awakened
     timestamp = get_timestamp();
     write_condition_event_to_output(timestamp, "DELETE AWAKENED");
+    write_command_to_output(timestamp, "DELETE", cmd->name, 0);
 
     // Acquire write lock
     rwlock_acquire_writelock(&rwlock);
@@ -110,8 +105,8 @@ void *delete_thread(void *arg) {
     pthread_cond_signal(&delete_cv);
     pthread_mutex_unlock(&cv_mutex);
 
-    // Log signaling delete
-    timestamp = get_timestamp();
+    // // Log signaling delete
+    // timestamp = get_timestamp();
     // write_condition_event_to_output(timestamp, "DELETE SIGNAL SENT");
 
     return NULL;

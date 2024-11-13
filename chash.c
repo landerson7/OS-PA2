@@ -85,6 +85,10 @@ int main() {
     pthread_t threads[num_commands];
     int thread_ids[num_commands];
 
+    // Log waiting on insert condition variable
+    uint64_t timestamp = get_timestamp();
+    write_condition_event_to_output(timestamp, "WAITING ON INSERTS");
+
     // Create and start INSERT threads
     for (int i = 0; i < num_commands; i++) {
         Command *cmd = &commands[i];
