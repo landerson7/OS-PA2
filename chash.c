@@ -49,7 +49,12 @@ int main() {
         fprintf(stderr, "Error reading commands.txt\n");
         exit(1);
     }
-
+    /*fp = fopen("output.txt", "a");
+    if (fp) {
+        fprintf(fp, "Running %d threads\n", num_threads);
+        
+        fclose(fp);
+    }*/
     // Read the rest of the commands
     while (fgets(line, sizeof(line), fp) != NULL) {
         Command cmd;
@@ -131,21 +136,40 @@ int main() {
         }
     }
 
-    // After all commands are done, print the summary
-    // Write a blank line to output.txt
+    // Acquire read lock to print the contents
+    timestamp = get_timestamp();
+    write_condition_event_to_output(timestamp, "READ LOCK ACQUIRED");
+    rwlock_acquire_readlock(&rwlock);
+
+    // Print the contents of the table
     pthread_mutex_lock(&output_mutex);
     fp = fopen("output.txt", "a");
     if (fp) {
-        fprintf(fp, "\n");
-        fprintf(fp, "Number of lock acquisitions:  %d\n", num_lock_acquisitions);
-        fprintf(fp, "Number of lock releases:  %d\n", num_lock_releases);
+        //hash_table_print(fp);
         fclose(fp);
     }
     pthread_mutex_unlock(&output_mutex);
 
+    // Release read lock
+    rwlock_release_readlock(&rwlock);
+    timestamp = get_timestamp();
+    write_condition_event_to_output(timestamp, "READ LOCK RELEASED");
+
+    // After releasing the read lock, print the final summary
+    pthread_mutex_lock(&output_mutex);
+    fp = fopen("output.txt", "a");
+    if (fp) {
+        fprintf(fp, "Finished all threads.\n");
+        fprintf(fp, "Number of lock acquisitions:  %d\n", num_lock_acquisitions);
+        fprintf(fp, "Number of lock releases:  %d\n", num_lock_releases);
+        
+        fclose(fp);
+    }
+    pthread_mutex_unlock(&output_mutex);
     // Acquire read lock to print the contents
     rwlock_acquire_readlock(&rwlock);
-
+    timestamp = get_timestamp();
+    write_lock_event_to_output(timestamp, "READ LOCK ACQUIRED");
     // Print the contents of the table
     pthread_mutex_lock(&output_mutex);
     fp = fopen("output.txt", "a");
@@ -157,6 +181,7 @@ int main() {
 
     // Release read lock
     rwlock_release_readlock(&rwlock);
-
+    timestamp = get_timestamp();
+    write_lock_event_to_output(timestamp, "READ LOCK RELEASED");
     return 0;
 }
